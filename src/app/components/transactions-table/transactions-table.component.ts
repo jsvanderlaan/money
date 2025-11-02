@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Component, computed, inject, input } from '@angular/core';
+import { FilterService } from '../../../services/filter.service';
 import { Transaction } from '../../../types/transaction.type';
 import { TransactionRowComponent } from '../transaction-row/transaction-row.component';
+import { TransactionsFilterComponent } from '../transactions-filter/transactions-filter.component';
 
 type SortField = 'date' | 'amount';
 type SortDirection = 'asc' | 'desc';
@@ -12,44 +13,22 @@ interface SortState {
     direction: SortDirection;
 }
 
-interface FilterForm {
-    description: FormControl<string>;
-}
-
 @Component({
     selector: 'app-transactions-table',
     standalone: true,
-    imports: [CommonModule, TransactionRowComponent, ReactiveFormsModule],
+    imports: [CommonModule, TransactionRowComponent, TransactionsFilterComponent],
     templateUrl: './transactions-table.component.html',
 })
 export class TransactionsTableComponent {
     readonly transactions = input.required<Transaction[]>();
-    readonly filterValues = signal<string[]>([]);
-
-    // Sorting
-    private readonly sortState = signal<SortState>({ field: 'date', direction: 'desc' });
-
-    readonly form = new FormGroup<FilterForm>({
-        description: new FormControl('', { nonNullable: true }),
-    });
-
-    constructor() {
-        this.form.valueChanges.subscribe(value =>
-            this.filterValues.set(
-                value.description
-                    ?.split(' ')
-                    .map(word => word.trim().toLocaleLowerCase())
-                    .filter(Boolean) || []
-            )
-        );
-    }
+    private readonly filterService = inject(FilterService);
 
     // Computed transactions applying sort and filter
     filteredAndSortedTransactions = computed(() => {
         let result = [...this.transactions()];
 
-        // Apply description filter
-        const filterValues = this.filterValues();
+        // Apply description filter from FilterService
+        const filterValues = this.filterService.descriptionWords();
         if (filterValues.length > 0) {
             result = result.filter(t =>
                 filterValues.every(
@@ -61,8 +40,20 @@ export class TransactionsTableComponent {
             );
         }
 
+        // Apply date range filter
+        const from = this.filterService.dateFrom();
+        const to = this.filterService.dateTo();
+        if (from) result = result.filter(t => t.date >= from);
+        if (to) result = result.filter(t => t.date <= to);
+
+        // Apply label filter
+        const labelIds = this.filterService.selectedLabelIds();
+        if (labelIds && labelIds.length) {
+            result = result.filter(t => (t.labels || []).some(l => labelIds.includes(l.id)));
+        }
+
         // Apply sorting
-        const { field, direction } = this.sortState();
+        const { field, direction } = this.filterService.sort();
         result.sort((a, b) => {
             const modifier = direction === 'asc' ? 1 : -1;
 
@@ -79,26 +70,4 @@ export class TransactionsTableComponent {
 
         return result;
     });
-
-    sort(field: SortField) {
-        const currentSort = this.sortState();
-
-        if (currentSort.field === field) {
-            // Toggle direction if clicking same field
-            this.sortState.set({
-                field,
-                direction: currentSort.direction === 'asc' ? 'desc' : 'asc',
-            });
-        } else {
-            // New field, start with desc
-            this.sortState.set({ field, direction: 'desc' });
-        }
-    }
-
-    getSortIcon(field: SortField): string {
-        const { field: currentField, direction } = this.sortState();
-
-        if (field !== currentField) return '';
-        return direction === 'asc' ? '↑' : '↓';
-    }
 }

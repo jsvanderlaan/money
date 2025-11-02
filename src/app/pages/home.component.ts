@@ -21,7 +21,7 @@ export class HomeComponent implements OnInit {
     ngOnInit(): void {
         const payload = this.storage.loadTransactions('uploaded_tabs_transactions');
         if (payload) {
-            this.transactions = payload.transactions.splice(0, 5);
+            this.transactions = payload.transactions;
             this.savedAt = payload.savedAt;
 
             // load persisted labels (if any) and apply them to the shown transactions
