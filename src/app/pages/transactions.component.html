@@ -1,0 +1,39 @@
+<div class="p-6">
+    <h2 class="text-xl font-semibold text-gray-800">Transactions</h2>
+
+    <form class="mt-4 space-y-4" (submit)="processFiles(); $event.preventDefault()">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Upload .TAB files</label>
+            <input
+                type="file"
+                accept=".tab"
+                multiple
+                (change)="onFilesSelected($event)"
+                class="mt-2 block w-full text-sm text-gray-700"
+            />
+            <p class="text-xs text-gray-500 mt-1">Select one or more .TAB files. Non-.TAB files will be ignored.</p>
+        </div>
+
+        @if (files.length) {
+        <div class="text-sm text-gray-700">
+            <strong>Selected files:</strong>
+            <ul class="list-disc ml-5 mt-2">
+                @for (f of files; track f.name) {
+                <li>{{ f.name }}</li>
+                }
+            </ul>
+        </div>
+        }
+
+        <div class="pt-2">
+            <button
+                type="button"
+                (click)="processFiles()"
+                class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500"
+            >
+                Process
+            </button>
+            <span class="ml-3 text-sm text-gray-600">{{ statusMessage }}</span>
+        </div>
+    </form>
+</div>

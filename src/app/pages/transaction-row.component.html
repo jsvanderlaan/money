@@ -1,0 +1,139 @@
+<div
+    class="flex items-start gap-4 py-3 px-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer rounded-sm"
+    tabindex="0"
+    role="button"
+    [attr.aria-expanded]="expanded"
+    (click)="toggle()"
+    (keydown.enter)="toggle()"
+    (keydown.space)="toggle()"
+>
+    <!-- Expander button at the front (stop propagation so button click doesn't double-toggle) -->
+    <button
+        (click)="$event.stopPropagation(); toggle()"
+        class="flex items-center justify-center w-6 h-6 text-gray-400 hover:text-gray-600"
+        aria-label="Expand transaction"
+    >
+        <svg
+            class="w-4 h-4 transition-transform"
+            [class.rotate-90]="expanded"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            <path
+                fill-rule="evenodd"
+                d="M6 4a1 1 0 011.707-.707l6.586 6.586a1 1 0 010 1.414L7.707 17.707A1 1 0 016 17V4z"
+                clip-rule="evenodd"
+            />
+        </svg>
+    </button>
+
+    <div class="w-24 text-sm text-gray-500">{{ formatDate(transaction.date) }}</div>
+
+    <div class="flex-1">
+        <div class="flex items-start justify-between">
+            <div class="min-w-0 pr-4">
+                <div class="text-sm font-semibold text-gray-900 truncate">{{ primaryLabel }}</div>
+                @if (transaction.description) {
+                <div class="text-xs text-gray-400 text-ellipsis">{{ transaction.description }}</div>
+                }
+                <div class="mt-1 flex items-center gap-2">
+                    @if (transaction.type) {
+                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ transaction.type }}</span> } @if
+                    (transaction.currency) { <span class="text-xs text-gray-400">{{ transaction.currency }}</span> }
+                </div>
+            </div>
+
+            <div class="gap-2 min-w-24">
+                <div class="text-right">
+                    <div
+                        class="text-sm font-semibold"
+                        [class.text-red-600]="transaction.amount < 0"
+                        [class.text-green-600]="transaction.amount >= 0"
+                    >
+                        {{ transaction.amount | currency : transaction.currency }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@if (expanded) {
+<div class="text-xs text-gray-700 p-6 border-b border-gray-100 bg-white">
+    <div class="grid grid-cols-2 gap-3">
+        @if (transaction.merchant) {
+        <div>
+            <strong>Merchant</strong>
+            <div class="text-gray-600">{{ transaction.merchant }}</div>
+        </div>
+        } @if (transaction.naam) {
+        <div>
+            <strong>Naam</strong>
+            <div class="text-gray-600">{{ transaction.naam }}</div>
+        </div>
+        } @if (transaction.iban) {
+        <div>
+            <strong>IBAN</strong>
+            <div class="text-gray-600">{{ transaction.iban }}</div>
+        </div>
+        } @if (transaction.bic) {
+        <div>
+            <strong>BIC</strong>
+            <div class="text-gray-600">{{ transaction.bic }}</div>
+        </div>
+        } @if (transaction.pasNumber) {
+        <div>
+            <strong>PAS#</strong>
+            <div class="text-gray-600">{{ transaction.pasNumber }}</div>
+        </div>
+        } @if (transaction.nr) {
+        <div>
+            <strong>NR</strong>
+            <div class="text-gray-600">{{ transaction.nr }}</div>
+        </div>
+        } @if (transaction.dateTime) {
+        <div>
+            <strong>Date/time</strong>
+            <div class="text-gray-600">{{ transaction.dateTime }}</div>
+        </div>
+        } @if (transaction.city) {
+        <div>
+            <strong>City</strong>
+            <div class="text-gray-600">{{ transaction.city }}</div>
+        </div>
+        } @if (transaction.countryCode) {
+        <div>
+            <strong>Country</strong>
+            <div class="text-gray-600">{{ transaction.countryCode }}</div>
+        </div>
+        } @if (transaction.omschrijving) {
+        <div class="col-span-2">
+            <strong>Omschrijving</strong>
+            <div class="text-gray-600 break-words">{{ transaction.omschrijving }}</div>
+        </div>
+        } @if (transaction.kenmerk) {
+        <div>
+            <strong>Kenmerk</strong>
+            <div class="text-gray-600">{{ transaction.kenmerk }}</div>
+        </div>
+        } @if (transaction.incassant) {
+        <div>
+            <strong>Incassant</strong>
+            <div class="text-gray-600">{{ transaction.incassant }}</div>
+        </div>
+        } @if (transaction.machtiging) {
+        <div>
+            <strong>Machtiging</strong>
+            <div class="text-gray-600">{{ transaction.machtiging }}</div>
+        </div>
+        } @if (!transaction.type) {
+        <div class="col-span-2 text-red-600">Unknown transaction type or no extra fields</div>
+        } @if (transaction.description) {
+        <div class="col-span-2">
+            <strong>Full description</strong>
+            <div class="text-gray-600 break-words">{{ transaction.description }}</div>
+        </div>
+        }
+    </div>
+</div>
+}

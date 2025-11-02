@@ -1,0 +1,25 @@
+<div class="p-6">
+    <h2 class="text-xl font-semibold text-gray-800">Home</h2>
+    <p class="text-sm text-gray-600 mt-2">Welcome to money.jurre.dev</p>
+
+    <section class="mt-6">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-medium text-gray-800">Transactions</h3>
+            <div class="text-sm text-gray-500">{{ savedAt ? 'Saved at ' + savedAt : 'No saved transactions' }}</div>
+        </div>
+
+        @if (transactions.length) {
+        <div class="bg-white shadow rounded">
+            <div class="divide-y">
+                @for (t of transactions; track t) {
+                <app-transaction-row [transaction]="t"></app-transaction-row>
+                }
+            </div>
+        </div>
+        } @else {
+        <div class="text-sm text-gray-600">
+            No transactions found in storage. Upload .TAB files on the Transactions page to populate.
+        </div>
+        }
+    </section>
+</div>
