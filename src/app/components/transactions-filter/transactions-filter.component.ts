@@ -15,7 +15,7 @@ export class TransactionsFilterComponent {
     private readonly storage = inject(StorageService);
 
     // available labels loaded from storage
-    labels = this.storage.loadLabels('labels')?.labels || [];
+    labels = [...(this.storage.loadLabels('labels')?.labels || [])].sort((a, b) => a.name.localeCompare(b.name));
 
     // local bindings
     get description() {
@@ -44,6 +44,7 @@ export class TransactionsFilterComponent {
     get selectedLabelIds() {
         return this.filter.selectedLabelIds();
     }
+
     toggleLabel(id: string) {
         const cur = new Set(this.filter.selectedLabelIds());
         if (cur.has(id)) cur.delete(id);

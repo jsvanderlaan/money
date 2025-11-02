@@ -10,6 +10,26 @@
     </div>
 
     <div class="flex flex-col">
+        <div class="text-sm text-gray-500 font-medium mb-2">Date</div>
+        <div class="flex items-center gap-2">
+            <input type="date" [(ngModel)]="dateFrom" class="px-2 py-1 border border-gray-200 rounded" />
+            <input type="date" [(ngModel)]="dateTo" class="px-2 py-1 border border-gray-200 rounded" />
+        </div>
+    </div>
+
+    <div class="ml-3">
+        <div class="text-sm text-gray-500 font-medium mb-2">Labels</div>
+        <div class="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+            @for (lbl of labels; track lbl) {
+                <label class="text-xs inline-flex items-center gap-2">
+                    <input type="checkbox" [checked]="selectedLabelIds.includes(lbl.id)" (change)="toggleLabel(lbl.id)" />
+                    <span class="px-2 py-0.5 rounded" [style.background]="lbl.color" [style.color]="'#fff'">{{ lbl.name }}</span>
+                </label>
+            }
+        </div>
+    </div>
+
+    <div class="flex flex-col">
         <div class="text-sm text-gray-500 font-medium mb-2">Sort by:</div>
         <div class="flex items-center gap-2">
             <button
@@ -30,26 +50,6 @@
                 <span class="text-sm font-medium">Amount</span>
                 <span class="text-sm text-gray-500">{{ getSortIcon('amount') }}</span>
             </button>
-        </div>
-    </div>
-
-    <div class="flex flex-col">
-        <div class="text-sm text-gray-500 font-medium mb-2">Date</div>
-        <div class="flex items-center gap-2">
-            <input type="date" [(ngModel)]="dateFrom" class="px-2 py-1 border border-gray-200 rounded" />
-            <input type="date" [(ngModel)]="dateTo" class="px-2 py-1 border border-gray-200 rounded" />
-        </div>
-    </div>
-
-    <div class="ml-3">
-        <div class="text-sm text-gray-500 font-medium mb-2">Labels</div>
-        <div class="flex flex-col gap-2">
-            @for (lbl of labels; track lbl) {
-            <label class="text-xs inline-flex items-center gap-2">
-                <input type="checkbox" [checked]="selectedLabelIds.includes(lbl.id)" (change)="toggleLabel(lbl.id)" />
-                <span class="px-2 py-0.5 rounded" [style.background]="lbl.color" [style.color]="'#fff'">{{ lbl.name }}</span>
-            </label>
-            }
         </div>
     </div>
 

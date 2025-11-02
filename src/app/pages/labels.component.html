@@ -11,6 +11,31 @@
             >
                 Create new label
             </button>
+
+            <!-- Import labels button + hidden file input -->
+            <input
+                #fileInput
+                type="file"
+                accept=".json,application/json"
+                (change)="onFileSelected($event)"
+                style="display: none"
+            />
+            <button
+                type="button"
+                class="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
+                (click)="fileInput.click()"
+                title="Import labels from JSON"
+            >
+                Import labels
+            </button>
+            <button
+                type="button"
+                class="inline-flex items-center gap-2 px-3 py-2 bg-gray-700 text-white rounded shadow hover:bg-gray-800"
+                (click)="exportLabels()"
+                title="Export current labels to JSON"
+            >
+                Export labels
+            </button>
             <button
                 *ngIf="creating"
                 type="button"
@@ -23,29 +48,29 @@
     </div>
 
     @if (creating) {
-    <app-label-creator [existingLabels]="labels" (cancel)="cancelCreate()" (saved)="onLabelSaved($event)"></app-label-creator>
+        <app-label-creator [existingLabels]="labels" (cancel)="cancelCreate()" (saved)="onLabelSaved($event)"></app-label-creator>
     }
 
     <div class="bg-white shadow-sm rounded divide-y">
         @for (label of labels; track label.id) {
-        <div class="flex items-center gap-4 p-3">
-            <div class="flex items-center gap-3 flex-1">
-                <div class="w-8 h-8 rounded" [style.background]="label.color"></div>
-                <div>
-                    <div class="font-medium">{{ label.name }}</div>
-                    <div class="text-sm text-gray-500">
-                        {{ formatRule(label.rules) }}
+            <div class="flex items-center gap-4 p-3">
+                <div class="flex items-center gap-3 flex-1">
+                    <div class="w-8 h-8 rounded min-w-8" [style.background]="label.color"></div>
+                    <div>
+                        <div class="font-medium">{{ label.name }}</div>
+                        <div class="text-sm text-gray-500">
+                            {{ formatRule(label.rules) }}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2 text-sm text-gray-700">
-                    <input type="checkbox" [checked]="label.enabled" (change)="toggleEnabled(label)" />
-                    Enabled
-                </label>
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                        <input type="checkbox" [checked]="label.enabled" (change)="toggleEnabled(label)" />
+                        Enabled
+                    </label>
+                </div>
             </div>
-        </div>
         }
     </div>
 </div>

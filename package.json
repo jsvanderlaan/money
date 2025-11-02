@@ -27,6 +27,7 @@
         "@angular-devkit/build-angular": "^20.3.8",
         "@angular/cli": "^20.3.8",
         "@angular/compiler-cli": "^20.3.9",
+        "prettier": "^3.4.2",
         "typescript": "5.9.3"
     }
 }

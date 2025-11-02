@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
+import { DEFAULT_LABELS } from '../../constants/default-labels.contants';
 import { StorageService } from '../../services/storage.service';
 import { Label, RuleNode } from '../../types/label.type';
 import { LabelCreatorComponent } from '../components/label-creator/label-creator.component';
@@ -18,73 +19,15 @@ export class LabelsComponent implements OnInit {
 
     private readonly storage = inject(StorageService);
 
+    // File input reference is handled in template; methods below manage import
+
     ngOnInit(): void {
         const payload = this.storage.loadLabels('labels');
         if (payload) {
             this.labels = payload.labels;
             return;
         }
-
-        // If no saved labels, initialize with three mock labels
-        // Use the new RuleNode AST so expressions like (A or B) and (C or D) are possible.
-        this.labels = [
-            {
-                id: 'lbl_netflix',
-                name: 'Netflix',
-                color: '#E50914',
-                enabled: true,
-                // (type is 'Incasso algemeen doorlopend') AND (description includes 'netflix')
-                rules: {
-                    id: 'g1',
-                    kind: 'group',
-                    operator: 'and',
-                    children: [
-                        {
-                            id: 'r1',
-                            kind: 'condition',
-                            field: 'type',
-                            operator: 'is',
-                            value: 'Incasso algemeen doorlopend',
-                        },
-                        {
-                            id: 'r2',
-                            kind: 'condition',
-                            field: 'description',
-                            operator: 'includes',
-                            value: 'netflix',
-                        },
-                    ],
-                },
-            },
-            {
-                id: 'lbl_groceries',
-                name: 'Groceries',
-                color: '#10B981',
-                enabled: true,
-                rules: {
-                    id: 'r3',
-                    kind: 'condition',
-                    field: 'description',
-                    operator: 'includes',
-                    value: 'supermarkt',
-                },
-            },
-            {
-                id: 'lbl_salary',
-                name: 'Salary',
-                color: '#3B82F6',
-                enabled: false,
-                rules: {
-                    id: 'r4',
-                    kind: 'condition',
-                    field: 'description',
-                    operator: 'includes',
-                    value: 'salary',
-                },
-            },
-        ];
-
-        // Persist initial mock labels so user can toggle them
+        this.labels = DEFAULT_LABELS;
         this.storage.saveLabels('labels', this.labels);
     }
 
@@ -105,6 +48,76 @@ export class LabelsComponent implements OnInit {
         this.labels.push(label);
         this.storage.saveLabels('labels', this.labels);
         this.creating = false;
+    }
+
+    // File input change handler - called from template
+    onFileSelected(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        // clear the input so the same file can be re-selected later
+        input.value = '';
+        this.importLabelsFromFile(file);
+    }
+
+    private importLabelsFromFile(file: File) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const raw = reader.result as string;
+                const parsed = JSON.parse(raw);
+
+                if (!Array.isArray(parsed)) {
+                    throw new Error('Imported JSON must be an array of labels');
+                }
+
+                // Basic validation: ensure each item has id and name
+                const ok = parsed.every((p: any) => p && typeof p.id === 'string' && typeof p.name === 'string');
+                if (!ok) {
+                    throw new Error('Each label must have at least an "id" (string) and "name" (string)');
+                }
+
+                const proceed = window.confirm(
+                    'Replace current labels with imported labels? This will overwrite your existing labels.'
+                );
+                if (!proceed) return;
+
+                // Cast to Label[]; we intentionally trust the imported structure beyond the basic checks
+                this.labels = parsed as Label[];
+                this.storage.saveLabels('labels', this.labels);
+                window.alert('Labels imported successfully');
+            } catch (err: any) {
+                window.alert('Failed to import labels: ' + (err && err.message ? err.message : String(err)));
+            }
+        };
+
+        reader.onerror = () => {
+            window.alert('Failed to read file');
+        };
+
+        reader.readAsText(file);
+    }
+
+    // Export current labels as a JSON file (timestamped)
+    exportLabels() {
+        try {
+            const data = JSON.stringify(this.labels, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            a.href = url;
+            a.download = `labels-${yyyy}${mm}${dd}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (err: any) {
+            window.alert('Failed to export labels: ' + (err && err.message ? err.message : String(err)));
+        }
     }
 
     formatRule(node: RuleNode): string {
