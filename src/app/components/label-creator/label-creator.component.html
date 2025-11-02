@@ -1,0 +1,239 @@
+<div class="bg-white shadow rounded p-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input
+                [formControl]="nameControl"
+                type="text"
+                maxlength="50"
+                class="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                placeholder="Label name"
+            />
+            @if (nameControl.invalid && nameControl.touched) {
+            <div class="text-xs text-red-600">Name is required (max 50 chars).</div>
+            }
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Color</label>
+            <input [formControl]="colorControl" type="color" class="mt-1 w-16 h-10 p-0 border-0" />
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h3 class="text-sm font-medium">Rules</h3>
+        <p class="text-xs text-gray-500">
+            Build a boolean expression that determines when the label applies. You can nest groups and add unlimited rules.
+        </p>
+
+        <div class="mt-3">
+            <!-- render root group -->
+            @if (rootRule) {
+            <div class="border border-gray-100 rounded p-3 bg-gray-50">
+                <div class="flex items-center gap-3 mb-2">
+                    <label class="text-sm">Operator:</label>
+                    <select
+                        #rootOp
+                        (change)="setGroupOperator(rootRule, rootOp.value)"
+                        class="px-2 py-1 border border-gray-200 rounded pr-8"
+                    >
+                        <option value="and" [selected]="getGroupOperator(rootRule) === 'and'">AND</option>
+                        <option value="or" [selected]="getGroupOperator(rootRule) === 'or'">OR</option>
+                    </select>
+                    <div class="ml-auto flex items-center gap-2">
+                        <button
+                            type="button"
+                            class="px-2 py-1 text-sm bg-white border rounded"
+                            (click)="addChildToGroup(rootRule, 'condition')"
+                        >
+                            + Condition
+                        </button>
+                        <button
+                            type="button"
+                            class="px-2 py-1 text-sm bg-white border rounded"
+                            (click)="addChildToGroup(rootRule, 'group')"
+                        >
+                            + Group
+                        </button>
+                        <button
+                            type="button"
+                            class="px-2 py-1 text-sm bg-white border rounded"
+                            (click)="addChildToGroup(rootRule, 'hasLabel')"
+                        >
+                            + Has label
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    @for (child of getChildren(rootRule); track child) {
+                    <div class="pl-3 pr-3 py-2 mb-2 border border-gray-100 rounded bg-white">
+                        @if (child.kind === 'condition') {
+                        <div class="flex items-center gap-2">
+                            <select
+                                #fld
+                                (change)="setConditionField(child, fld.value)"
+                                class="px-2 py-1 border border-gray-200 rounded pr-8"
+                            >
+                                <option value="description" [selected]="child.field === 'description'">Description</option>
+                                <option value="merchant" [selected]="child.field === 'merchant'">Merchant</option>
+                                <option value="naam" [selected]="child.field === 'naam'">Naam</option>
+                                <option value="type" [selected]="child.field === 'type'">Type</option>
+                                <option value="amount" [selected]="child.field === 'amount'">Amount</option>
+                            </select>
+
+                            <select
+                                #opSel
+                                (change)="setConditionOperator(child, opSel.value)"
+                                class="px-2 py-1 border border-gray-200 rounded pr-8"
+                            >
+                                <option value="includes" [selected]="child.operator === 'includes'">includes</option>
+                                <option value="is" [selected]="child.operator === 'is'">is</option>
+                                <option value="gt" [selected]="child.operator === 'gt'">&gt;</option>
+                                <option value="lt" [selected]="child.operator === 'lt'">&lt;</option>
+                            </select>
+
+                            <input
+                                #valInput
+                                type="text"
+                                class="flex-1 px-2 py-1 border border-gray-200 rounded"
+                                placeholder="value"
+                                (input)="setConditionValue(child, valInput.value)"
+                            />
+
+                            <button
+                                type="button"
+                                class="px-2 py-1 text-sm text-red-600"
+                                (click)="removeChildFromGroup(rootRule, getChildren(rootRule).indexOf(child))"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                        } @if (child.kind === 'hasLabel') {
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm">Has label:</label>
+                            <select
+                                #hasSel
+                                class="px-2 py-1 border border-gray-200 rounded pr-8"
+                                (change)="setHasLabel(child, hasSel.value)"
+                            >
+                                <option value="">-- select label --</option>
+                                @for (opt of availableLabelOptions(); track opt) {
+                                <option [value]="opt.id">{{ opt.name }}</option>
+                                }
+                            </select>
+                            <button
+                                type="button"
+                                class="px-2 py-1 text-sm text-red-600"
+                                (click)="removeChildFromGroup(rootRule, getChildren(rootRule).indexOf(child))"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                        } @if (child.kind === 'group') {
+                        <div class="pl-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <label class="text-sm">Group operator:</label>
+                                <select
+                                    #childOp
+                                    (change)="setGroupOperator(child, childOp.value)"
+                                    class="px-2 py-1 border border-gray-200 rounded pr-8"
+                                >
+                                    <option value="and" [selected]="getGroupOperator(child) === 'and'">AND</option>
+                                    <option value="or" [selected]="getGroupOperator(child) === 'or'">OR</option>
+                                </select>
+                                <div class="ml-auto">
+                                    <button
+                                        type="button"
+                                        class="px-2 py-1 text-sm bg-white border border-gray-200 rounded"
+                                        (click)="addChildToGroup(child, 'condition')"
+                                    >
+                                        + Condition
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="px-2 py-1 text-sm bg-white border border-gray-200 rounded"
+                                        (click)="addChildToGroup(child, 'hasLabel')"
+                                    >
+                                        + Has label
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="px-2 py-1 text-sm text-red-600"
+                                        (click)="removeChildFromGroup(rootRule, getChildren(rootRule).indexOf(child))"
+                                    >
+                                        Remove group
+                                    </button>
+                                </div>
+                            </div>
+
+                            @for (sub of getChildren(child); track sub) {
+                            <div class="mb-2 flex items-center gap-2">
+                                @if (sub.kind === 'condition') {
+                                <select
+                                    #subFld
+                                    class="px-2 py-1 border border-gray-200 rounded pr-8"
+                                    (change)="setConditionField(sub, subFld.value)"
+                                >
+                                    <option value="description">Description</option>
+                                    <option value="merchant">Merchant</option>
+                                    <option value="naam">Naam</option>
+                                    <option value="type">Type</option>
+                                    <option value="amount">Amount</option>
+                                </select>
+                                <select
+                                    #subOp
+                                    class="px-2 py-1 border border-gray-200 rounded pr-8"
+                                    (change)="setConditionOperator(sub, subOp.value)"
+                                >
+                                    <option value="includes">includes</option>
+                                    <option value="is">is</option>
+                                    <option value="gt">&gt;</option>
+                                    <option value="lt">&lt;</option>
+                                </select>
+                                <input
+                                    #subVal
+                                    type="text"
+                                    class="flex-1 px-2 py-1 border border-gray-200 rounded"
+                                    placeholder="value"
+                                    (input)="setConditionValue(sub, subVal.value)"
+                                />
+                                } @if (sub.kind === 'hasLabel') {
+                                <select
+                                    #subHas
+                                    class="px-2 py-1 border border-gray-200 rounded pr-8"
+                                    (change)="setHasLabel(sub, subHas.value)"
+                                >
+                                    <option value="">-- select label --</option>
+                                    @for (opt of availableLabelOptions(); track opt) {
+                                    <option [value]="opt.id">{{ opt.name }}</option>
+                                    }
+                                </select>
+                                }
+
+                                <button
+                                    type="button"
+                                    class="px-2 py-1 text-sm text-red-600"
+                                    (click)="removeChildFromGroup(child, getChildren(child).indexOf(sub))"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            <div class="mt-4 flex gap-2">
+                <button type="button" class="px-4 py-2 bg-green-600 text-white rounded" (click)="saveNewLabel()">
+                    Save label
+                </button>
+                <button type="button" class="px-4 py-2 bg-gray-100 rounded" (click)="cancelCreate()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Label } from '../types/label.type';
 import { Transaction } from '../types/transaction.type';
 
 @Injectable({
@@ -34,5 +35,18 @@ export class StorageService {
             date: t.date ? new Date(t.date) : undefined,
         }));
         return { transactions, savedAt: v.savedAt };
+    }
+
+    // Labels persistence
+    saveLabels(key: string, labels: Label[]) {
+        const payload = { labels, savedAt: new Date().toISOString() };
+        this.setObject(key, payload);
+    }
+
+    loadLabels(key: string): { labels: Label[]; savedAt: string } | null {
+        const v = this.getObject<{ labels: any[]; savedAt: string }>(key);
+        if (!v) return null;
+        // No special revival needed here; return as-is
+        return { labels: v.labels as Label[], savedAt: v.savedAt };
     }
 }

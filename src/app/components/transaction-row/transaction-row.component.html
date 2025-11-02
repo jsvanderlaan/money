@@ -39,8 +39,12 @@
                 }
                 <div class="mt-1 flex items-center gap-2">
                     @if (transaction.type) {
-                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ transaction.type }}</span> } @if
-                    (transaction.currency) { <span class="text-xs text-gray-400">{{ transaction.currency }}</span> }
+                    <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ transaction.type }}</span>
+                    } @if (transaction.labels?.length) { @for (lbl of transaction.labels; track lbl) {
+                    <span class="text-xs px-2 py-0.5 rounded" [style.background]="lbl.color" [style.color]="textColor(lbl.color)">
+                        {{ lbl.name }}
+                    </span>
+                    } } @if (transaction.currency) { <span class="text-xs text-gray-400">{{ transaction.currency }}</span> }
                 </div>
             </div>
 
