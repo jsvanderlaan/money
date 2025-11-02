@@ -1,0 +1,12 @@
+import { Component } from '@angular/core';
+
+@Component({
+    selector: 'app-labels',
+    template: `
+        <div class="p-6">
+            <h2 class="text-xl font-semibold text-gray-800">Labels</h2>
+            <p class="text-sm text-gray-600 mt-2">(Empty page — add label management here)</p>
+        </div>
+    `,
+})
+export class LabelsComponent {}

@@ -1,0 +1,33 @@
+<header class="bg-white border-b">
+    <div class="max-w-5xl mx-auto flex items-center justify-between px-4 py-3">
+        <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-500 font-medium">money.jurre.dev</span>
+        </div>
+
+        <nav class="flex items-center space-x-2">
+            <a
+                routerLink="/"
+                routerLinkActive="text-indigo-600"
+                [routerLinkActiveOptions]="{ exact: true }"
+                class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded"
+                >Home</a
+            >
+            <a
+                routerLink="/labels"
+                routerLinkActive="text-indigo-600"
+                class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded"
+                >Labels</a
+            >
+            <a
+                routerLink="/transactions"
+                routerLinkActive="text-indigo-600"
+                class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded"
+                >Transactions</a
+            >
+        </nav>
+    </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-6">
+    <router-outlet></router-outlet>
+</main>
