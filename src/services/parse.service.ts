@@ -15,8 +15,17 @@ export class ParseService {
 
             return {
                 currency: values[1],
-                // parse date like 20220912 to Date
-                date: new Date(+values[2].substring(0, 4), +values[2].substring(4, 6) - 1, +values[2].substring(6, 8)),
+                // parse date like 20220912 to UTC Date
+                date: new Date(
+                    Date.UTC(
+                        +values[2].substring(0, 4),
+                        +values[2].substring(4, 6) - 1, // months are 0-based
+                        +values[2].substring(6, 8),
+                        0, // hours
+                        0, // minutes
+                        0 // seconds
+                    )
+                ),
                 balanceStart: this.parseDutchNumber(values[3]),
                 balanceEnd: this.parseDutchNumber(values[4]),
                 amount: this.parseDutchNumber(values[6]),

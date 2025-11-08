@@ -6,7 +6,7 @@ import { TransactionService } from './transaction.service';
 interface DateGroup {
     key: string; // Display text
     timestamp: number; // For sorting
-    amounts: number[]; // Transaction amounts
+    transactions: Transaction[]; // Transaction amounts
 }
 
 export interface AggregatedData {
@@ -32,23 +32,63 @@ export class InsightsService {
         // Use a Map with both display text and sort key
         const groups = new Map<string, DateGroup>();
 
+        if (transactions.length === 0) {
+            return { labels: [], values: [] };
+        }
+
+        // Find min and max dates
+        const dates = transactions.map(tx => new Date(tx.date));
+        const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+        const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+
+        // Generate all periods between min and max
+        const current = new Date(minDate);
+        while (current <= maxDate) {
+            const { key, timestamp } = this.getGroupKey(current, granularity);
+            if (!groups.has(key)) {
+                groups.set(key, { key, timestamp, transactions: [] });
+            }
+
+            // Advance to next period
+            switch (granularity) {
+                case 'day':
+                    current.setDate(current.getDate() + 1);
+                    break;
+                case 'week':
+                    current.setDate(current.getDate() + 7);
+                    break;
+                case 'month':
+                    current.setMonth(current.getMonth() + 1);
+                    break;
+                case 'year':
+                    current.setFullYear(current.getFullYear() + 1);
+                    break;
+            }
+        }
+
+        // Ensure maxDate period is included
+        const { key, timestamp } = this.getGroupKey(maxDate, granularity);
+        if (!groups.has(key)) {
+            groups.set(key, { key, timestamp, transactions: [] });
+        }
+
+        // Add transaction amounts to their periods
         for (const tx of transactions) {
             const date = new Date(tx.date);
-            const { key, timestamp } = this.getGroupKey(date, granularity);
-
+            const { key } = this.getGroupKey(date, granularity);
             if (!groups.has(key)) {
-                groups.set(key, { key, timestamp, amounts: [] });
+                console.warn(`Group key not found for transaction date: ${date.toISOString()}`);
+                continue;
             }
-            groups.get(key)!.amounts.push(tx.amount);
+            groups.get(key)!.transactions.push(tx);
         }
 
         // Sort by timestamp (chronological order)
         const sortedGroups = Array.from(groups.values()).sort((a, b) => a.timestamp - b.timestamp);
 
-        // todo fix empty weeks/years/months/days
         return {
             labels: sortedGroups.map(g => g.key),
-            values: sortedGroups.map(g => g.amounts.reduce((a, b) => a + b, 0)),
+            values: sortedGroups.map(g => g.transactions.reduce((a, b) => a + b.amount, 0)),
         };
     }
 
