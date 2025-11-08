@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { ParseService } from '../../services/parse.service';
-import { StorageService } from '../../services/storage.service';
+import { TransactionService } from '../../services/transaction.service';
 import { Transaction } from '../../types/transaction.type';
 
 @Component({
@@ -13,7 +13,7 @@ import { Transaction } from '../../types/transaction.type';
 export class TransactionsComponent {
     files: File[] = [];
     statusMessage = '';
-    private readonly storage = inject(StorageService);
+    private readonly transactionService = inject(TransactionService);
     private readonly parseService = inject(ParseService);
 
     onFilesSelected(event: Event) {
@@ -42,8 +42,8 @@ export class TransactionsComponent {
             // Parse combined .TAB content into Transaction[]
             const transactions: Transaction[] = this.parseService.parseTabFile(combined);
 
-            // Save parsed transactions via StorageService
-            this.storage.saveTransactions('uploaded_tabs_transactions', transactions);
+            // Save parsed transactions via TransactionService
+            this.transactionService.set(transactions);
 
             this.statusMessage = `Parsed and saved ${transactions.length} transaction(s) to storage (key: uploaded_tabs_transactions)`;
         } catch (err) {

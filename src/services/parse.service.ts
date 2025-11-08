@@ -12,7 +12,6 @@ export class ParseService {
             const values = line.split('\t');
             let description = values[7]?.trim();
             const { type, extra } = this.parseTabDescription(description);
-            console.log(values[3], values[4], values[6], +values[3], +values[4], +values[6]);
 
             return {
                 currency: values[1],

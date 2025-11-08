@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FilterService } from '../../../services/filter.service';
-import { StorageService } from '../../../services/storage.service';
+import { FilterService, Granularity } from '../../../services/filter.service';
+import { LabelService } from '../../../services/label.service';
 
 @Component({
     selector: 'app-transactions-filter',
@@ -12,12 +12,9 @@ import { StorageService } from '../../../services/storage.service';
 })
 export class TransactionsFilterComponent {
     private readonly filter = inject(FilterService);
-    private readonly storage = inject(StorageService);
+    private readonly labelService = inject(LabelService);
+    readonly labels = computed(() => [...(this.labelService.labels() || [])].sort((a, b) => a.name.localeCompare(b.name)));
 
-    // available labels loaded from storage
-    labels = [...(this.storage.loadLabels('labels')?.labels || [])].sort((a, b) => a.name.localeCompare(b.name));
-
-    // local bindings
     get description() {
         return this.filter.description();
     }
@@ -56,6 +53,13 @@ export class TransactionsFilterComponent {
         this.filter.setDescription('');
         this.filter.setDateRange(null, null);
         this.filter.setSelectedLabels([]);
+    }
+
+    get granularity() {
+        return this.filter.granularity();
+    }
+    set granularity(v: Granularity) {
+        this.filter.setGranularity(v);
     }
 
     // Sorting helpers (delegate to FilterService)

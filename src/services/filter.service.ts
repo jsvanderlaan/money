@@ -9,12 +9,15 @@ interface SortState {
     direction: SortDirection;
 }
 
+export type Granularity = 'day' | 'week' | 'month' | 'year';
+
 interface PersistedFilter {
     description: string;
     dateFrom?: string | null;
     dateTo?: string | null;
     labels: string[];
     sort: SortState;
+    granularity: Granularity;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,6 +29,7 @@ export class FilterService {
     dateFrom = signal<Date | null>(null);
     dateTo = signal<Date | null>(null);
     selectedLabelIds = signal<string[]>([]);
+    granularity = signal<Granularity>('month');
 
     sort = signal<SortState>({ field: 'date', direction: 'desc' });
 
@@ -46,6 +50,7 @@ export class FilterService {
             this.dateTo.set(v.dateTo ? new Date(v.dateTo) : null);
             this.selectedLabelIds.set(v.labels || []);
             this.sort.set(v.sort || { field: 'date', direction: 'desc' });
+            this.granularity.set(v.granularity || 'month');
         } else {
             // default to last month period
             const today = new Date();
@@ -63,6 +68,7 @@ export class FilterService {
                 dateTo: this.dateTo()?.toISOString() ?? null,
                 labels: this.selectedLabelIds(),
                 sort: this.sort(),
+                granularity: this.granularity(),
             };
             this.storage.setObject(this.storageKey, payload);
         });
@@ -88,5 +94,9 @@ export class FilterService {
         } else {
             this.sort.set({ field, direction: 'desc' });
         }
+    }
+
+    setGranularity(v: Granularity) {
+        this.granularity.set(v);
     }
 }

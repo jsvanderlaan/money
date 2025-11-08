@@ -33,14 +33,14 @@
     <div class="flex-1">
         <div class="flex items-start justify-between">
             <div class="min-w-0 pr-4 flex items-center gap-2">
-                <span class="text-sm font-semibold text-gray-900 truncate">{{ primaryLabel }}</span>
+                <span class="text-sm font-semibold text-gray-900 truncate max-w-72">{{ primaryLabel }}</span>
                 @if (transaction.type) {
                     <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">{{ transaction.type }}</span>
                 }
                 @if (transaction.labels?.length) {
                     @for (lbl of transaction.labels; track lbl) {
                         <span
-                            class="text-xs px-2 py-0.5 rounded"
+                            class="text-xs px-2 py-0.5 rounded text-nowrap"
                             [style.background]="lbl.color"
                             [style.color]="textColor(lbl.color)"
                         >

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { DEFAULT_LABELS } from '../../constants/default-labels.contants';
-import { StorageService } from '../../services/storage.service';
+import { LabelService } from '../../services/label.service';
 import { Label, RuleNode } from '../../types/label.type';
 import { LabelCreatorComponent } from '../components/label-creator/label-creator.component';
 
@@ -17,23 +17,21 @@ export class LabelsComponent implements OnInit {
     // Creation state (creator component is used)
     creating = false;
 
-    private readonly storage = inject(StorageService);
-
-    // File input reference is handled in template; methods below manage import
+    private readonly labelService = inject(LabelService);
 
     ngOnInit(): void {
-        const payload = this.storage.loadLabels('labels');
+        const payload = this.labelService.labels();
         if (payload) {
-            this.labels = payload.labels;
+            this.labels = payload;
             return;
         }
         this.labels = DEFAULT_LABELS;
-        this.storage.saveLabels('labels', this.labels);
+        this.labelService.set(this.labels);
     }
 
     toggleEnabled(label: Label) {
         label.enabled = !label.enabled;
-        this.storage.saveLabels('labels', this.labels);
+        this.labelService.set(this.labels);
     }
 
     openCreate() {
@@ -46,7 +44,7 @@ export class LabelsComponent implements OnInit {
 
     onLabelSaved(label: Label) {
         this.labels.push(label);
-        this.storage.saveLabels('labels', this.labels);
+        this.labelService.set(this.labels);
         this.creating = false;
     }
 
@@ -84,7 +82,7 @@ export class LabelsComponent implements OnInit {
 
                 // Cast to Label[]; we intentionally trust the imported structure beyond the basic checks
                 this.labels = parsed as Label[];
-                this.storage.saveLabels('labels', this.labels);
+                this.labelService.set(this.labels);
                 window.alert('Labels imported successfully');
             } catch (err: any) {
                 window.alert('Failed to import labels: ' + (err && err.message ? err.message : String(err)));
