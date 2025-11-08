@@ -22,7 +22,6 @@ export class InsightsComponent implements AfterViewInit {
     private readonly filter = inject(FilterService);
 
     constructor() {
-        // Watch filter changes and update chart when data changes
         effect(() => {
             const data = this.insights.aggregatedData();
             if (this.chart) {

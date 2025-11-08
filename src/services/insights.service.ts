@@ -21,7 +21,7 @@ export class InsightsService {
     private readonly transactionService = inject(TransactionService);
     private readonly filterService = inject(FilterService);
 
-    aggregatedData: Signal<AggregatedData> = computed(() => {
+    readonly aggregatedData: Signal<AggregatedData> = computed(() => {
         const transactions = this.transactionService.transactions();
         const granularity = this.filterService.granularity();
 
@@ -45,6 +45,7 @@ export class InsightsService {
         // Sort by timestamp (chronological order)
         const sortedGroups = Array.from(groups.values()).sort((a, b) => a.timestamp - b.timestamp);
 
+        // todo fix empty weeks/years/months/days
         return {
             labels: sortedGroups.map(g => g.key),
             values: sortedGroups.map(g => g.amounts.reduce((a, b) => a + b, 0)),

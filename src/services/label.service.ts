@@ -1,4 +1,5 @@
 import { inject, Injectable, signal, WritableSignal } from '@angular/core';
+import { DEFAULT_LABELS } from '../constants/default-labels.contants';
 import { Label, RuleCondition, RuleGroup, RuleHasLabel, RuleNode } from '../types/label.type';
 import { Transaction } from '../types/transaction.type';
 import { StorageService } from './storage.service';
@@ -20,18 +21,21 @@ export class LabelService {
 
     private loadInitialData(): void {
         const v = this.storage.getObject<{ labels: any[] }>(this.storageKey);
-        if (!v) return;
-        this.labels.set(v.labels as Label[]);
+        if (!v) {
+            this.set(DEFAULT_LABELS);
+        } else {
+            this.labels.set(v.labels as Label[]);
+        }
     }
 
     /** Apply an ordered list of labels to the transactions. Mutates transactions by adding tx.labels array. */
-    applyLabels(transactions: Transaction[]): Transaction[] {
+    applyLabels(transactions: Transaction[], labels: Label[]): Transaction[] {
         for (const tx of transactions) {
             tx.labels = tx.labels || [];
             // track applied ids on this tx in order
             const appliedIds: string[] = (tx.labels || []).map((l: { id: string }) => l.id);
 
-            for (const label of this.labels() || []) {
+            for (const label of labels) {
                 if (!label.enabled) continue;
                 // evaluate label rule against tx using current appliedIds
                 const matches = this.evaluateNode(label.rules, tx, appliedIds);

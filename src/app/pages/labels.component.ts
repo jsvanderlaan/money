@@ -1,6 +1,4 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { DEFAULT_LABELS } from '../../constants/default-labels.contants';
+import { Component, inject } from '@angular/core';
 import { LabelService } from '../../services/label.service';
 import { Label, RuleNode } from '../../types/label.type';
 import { LabelCreatorComponent } from '../components/label-creator/label-creator.component';
@@ -8,30 +6,20 @@ import { LabelCreatorComponent } from '../components/label-creator/label-creator
 @Component({
     selector: 'app-labels',
     standalone: true,
-    imports: [CommonModule, LabelCreatorComponent],
+    imports: [LabelCreatorComponent],
     templateUrl: './labels.component.html',
 })
-export class LabelsComponent implements OnInit {
-    labels: Label[] = [];
-
-    // Creation state (creator component is used)
+export class LabelsComponent {
+    // Creation/edit state
     creating = false;
+    editingLabel: Label | null = null;
 
     private readonly labelService = inject(LabelService);
-
-    ngOnInit(): void {
-        const payload = this.labelService.labels();
-        if (payload) {
-            this.labels = payload;
-            return;
-        }
-        this.labels = DEFAULT_LABELS;
-        this.labelService.set(this.labels);
-    }
+    readonly labels = this.labelService.labels;
 
     toggleEnabled(label: Label) {
         label.enabled = !label.enabled;
-        this.labelService.set(this.labels);
+        this.labelService.set(this.labels() || []);
     }
 
     openCreate() {
@@ -40,12 +28,33 @@ export class LabelsComponent implements OnInit {
 
     cancelCreate() {
         this.creating = false;
+        this.editingLabel = null;
     }
 
     onLabelSaved(label: Label) {
-        this.labels.push(label);
-        this.labelService.set(this.labels);
+        const labels = this.labels() || [];
+        const existingIndex = labels.findIndex(l => l.id === label.id);
+        if (existingIndex && existingIndex >= 0) {
+            // Update existing
+            labels[existingIndex] = label;
+        } else {
+            // Add new
+            labels.push(label);
+        }
+        this.labelService.set(labels);
         this.creating = false;
+        this.editingLabel = null;
+    }
+
+    editLabel(label: Label) {
+        this.editingLabel = label;
+        this.creating = false;
+    }
+
+    deleteLabel(label: Label) {
+        if (!window.confirm(`Delete label "${label.name}"?`)) return;
+        const labels = this.labels() || [];
+        this.labelService.set(labels.filter(l => l.id !== label.id));
     }
 
     // File input change handler - called from template
@@ -81,8 +90,7 @@ export class LabelsComponent implements OnInit {
                 if (!proceed) return;
 
                 // Cast to Label[]; we intentionally trust the imported structure beyond the basic checks
-                this.labels = parsed as Label[];
-                this.labelService.set(this.labels);
+                this.labelService.set(parsed as Label[]);
                 window.alert('Labels imported successfully');
             } catch (err: any) {
                 window.alert('Failed to import labels: ' + (err && err.message ? err.message : String(err)));

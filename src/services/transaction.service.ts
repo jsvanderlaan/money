@@ -10,7 +10,6 @@ export class TransactionService {
     private readonly storage = inject(StorageService);
     private readonly filterService = inject(FilterService);
     private readonly labelService = inject(LabelService);
-
     private readonly transactionsCache: WritableSignal<Transaction[] | null> = signal<Transaction[] | null>(null);
 
     readonly minDate = computed(() => {
@@ -22,12 +21,20 @@ export class TransactionService {
         return transactions.reduce((max, t) => (t.date > max ? t.date : max), transactions[0].date);
     });
 
-    // Computed transactions applying sort and filter
     readonly transactions = computed(() => {
-        let result = [...(this.transactionsCache() || [])];
-
-        // Apply description filter from FilterService
+        const transactions = this.transactionsCache();
+        if (!transactions) return [];
         const filterValues = this.filterService.descriptionWords();
+        const from = this.filterService.dateFrom();
+        const to = this.filterService.dateTo();
+        const labelIds = this.filterService.selectedLabelIds();
+        const { field, direction } = this.filterService.sort();
+        const labels = this.labelService.labels() || [];
+
+        let result = [...transactions];
+
+        this.labelService.applyLabels(result, labels);
+
         if (filterValues.length > 0) {
             result = result.filter(t =>
                 filterValues.every(
@@ -39,20 +46,13 @@ export class TransactionService {
             );
         }
 
-        // Apply date range filter
-        const from = this.filterService.dateFrom();
-        const to = this.filterService.dateTo();
         if (from) result = result.filter(t => t.date >= from);
         if (to) result = result.filter(t => t.date <= to);
 
-        // Apply label filter
-        const labelIds = this.filterService.selectedLabelIds();
         if (labelIds && labelIds.length) {
             result = result.filter(t => (t.labels || []).some(l => labelIds.includes(l.id)));
         }
 
-        // Apply sorting
-        const { field, direction } = this.filterService.sort();
         result.sort((a, b) => {
             const modifier = direction === 'asc' ? 1 : -1;
 
@@ -67,9 +67,6 @@ export class TransactionService {
             return 0;
         });
 
-        // Apply labels
-        this.labelService.applyLabels(result);
-
         return result;
     });
 
@@ -78,9 +75,8 @@ export class TransactionService {
     }
 
     set(transactions: Transaction[]): void {
-        const labeledTransactions = this.labelService.applyLabels(transactions);
-        this.storage.setObject(this.storageKey, { transactions: labeledTransactions });
-        this.transactionsCache.set(labeledTransactions);
+        this.storage.setObject(this.storageKey, { transactions });
+        this.transactionsCache.set(transactions);
     }
 
     clear(): void {

@@ -25,13 +25,12 @@ export class FilterService {
     private readonly storageKey = 'tx_filters';
 
     // filter state as signals
-    description = signal<string>('');
-    dateFrom = signal<Date | null>(null);
-    dateTo = signal<Date | null>(null);
-    selectedLabelIds = signal<string[]>([]);
-    granularity = signal<Granularity>('month');
-
-    sort = signal<SortState>({ field: 'date', direction: 'desc' });
+    readonly description = signal<string>('');
+    readonly dateFrom = signal<Date | null>(null);
+    readonly dateTo = signal<Date | null>(null);
+    readonly selectedLabelIds = signal<string[]>([]);
+    readonly granularity = signal<Granularity>('month');
+    readonly sort = signal<SortState>({ field: 'date', direction: 'desc' });
 
     // computed for convenience
     descriptionWords = computed(() =>
