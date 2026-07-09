@@ -1,4 +1,6 @@
 <div class="space-y-6">
+    @let parse = diagnostics();
+
     <section class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="space-y-2">
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Import</p>
@@ -131,4 +133,47 @@
             <span class="text-sm text-slate-600">{{ statusMessage }}</span>
         </div>
     </form>
+
+    @if (parse) {
+        <section class="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-950">Parse diagnostics</h2>
+                    <p class="mt-1 text-sm text-slate-600">Import quality indicators for your latest parsing run.</p>
+                </div>
+                <div class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+                    Success ratio {{ parse.successRatio }}%
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Unknown types: <strong>{{ parse.unknownTypeCount }}</strong>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Pattern misses: <strong>{{ parse.unmatchedKnownPatternCount }}</strong>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Non-empty lines: <strong>{{ parse.nonEmptyLines }}</strong>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Parsed transactions: <strong>{{ parse.parsedTransactions }}</strong>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    Ignored empty lines: <strong>{{ parse.ignoredEmptyLines }}</strong>
+                </div>
+            </div>
+
+            @if (parse.unknownSamples.length) {
+                <div class="mt-4">
+                    <p class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Unknown sample descriptions</p>
+                    <ul class="mt-2 grid gap-2 text-sm text-slate-700 md:grid-cols-2 xl:grid-cols-3">
+                        @for (sample of parse.unknownSamples; track sample) {
+                            <li class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">{{ sample }}</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </section>
+    }
 </div>

@@ -3,6 +3,7 @@ import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../services/analytics';
+import { ParseDiagnosticsService } from '../../services/parse-diagnostics.service';
 import { ParseService } from '../../services/parse.service';
 import { TransactionService } from '../../services/transaction.service';
 import { Transaction } from '../../types/transaction.type';
@@ -19,8 +20,10 @@ export class TransactionsComponent {
     includeDuplicates = false;
     private readonly transactionService = inject(TransactionService);
     private readonly parseService = inject(ParseService);
+    private readonly parseDiagnostics = inject(ParseDiagnosticsService);
     private readonly analytics = inject(AnalyticsService);
     readonly coverage = this.transactionService.coverageStats;
+    readonly diagnostics = this.parseDiagnostics.lastRun;
     readonly minDate = this.transactionService.minDate;
     readonly maxDate = this.transactionService.maxDate;
     readonly hasTransactions = computed(() => this.coverage().total > 0);
