@@ -1,6 +1,6 @@
-export type LabelRuleField = 'type' | 'description' | 'merchant' | 'naam' | 'amount';
+export type LabelRuleField = 'type' | 'description' | 'merchant' | 'naam' | 'amount' | 'date' | 'countryCode';
 
-export type LabelRuleOperator = 'is' | 'includes' | 'gt' | 'lt';
+export type LabelRuleOperator = 'is' | 'includes' | 'startsWith' | 'endsWith' | 'regex' | 'gt' | 'lt' | 'between';
 
 /**
  * A single atomic condition, e.g. "description includes netflix".
@@ -11,6 +11,7 @@ export interface RuleCondition {
     field: LabelRuleField;
     operator: LabelRuleOperator;
     value: string;
+    valueTo?: string;
 }
 
 /**

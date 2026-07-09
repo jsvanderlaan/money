@@ -1,5 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { AnalyticsService } from '../../services/analytics';
+import { ParseDiagnosticsService } from '../../services/parse-diagnostics.service';
+import { TransactionService } from '../../services/transaction.service';
 import { InsightsComponent } from '../components/insights/insights.component';
 import { TransactionsFilterComponent } from '../components/transactions-filter/transactions-filter.component';
 import { TransactionsTableComponent } from '../components/transactions-table/transactions-table.component';
@@ -7,7 +11,25 @@ import { TransactionsTableComponent } from '../components/transactions-table/tra
 @Component({
     selector: 'app-home',
     standalone: true,
-    imports: [CommonModule, TransactionsTableComponent, TransactionsFilterComponent, InsightsComponent],
+    imports: [CommonModule, RouterLink, TransactionsTableComponent, TransactionsFilterComponent, InsightsComponent],
     templateUrl: './home.component.html',
 })
-export class HomeComponent {}
+export class HomeComponent {
+    private readonly tx = inject(TransactionService);
+    private readonly parseDiagnostics = inject(ParseDiagnosticsService);
+    private readonly analytics = inject(AnalyticsService);
+
+    readonly coverage = this.tx.coverageStats;
+    readonly diagnostics = this.parseDiagnostics.lastRun;
+    readonly minDate = this.tx.minDate;
+    readonly maxDate = this.tx.maxDate;
+    readonly hasTransactions = computed(() => this.coverage().total > 0);
+
+    onStartImportClick() {
+        this.analytics.track('Onboarding Start Import Clicked', {
+            source: 'home_get_started',
+            hasTransactions: this.hasTransactions(),
+            totalTransactions: this.coverage().total,
+        });
+    }
+}

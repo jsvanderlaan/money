@@ -21,6 +21,10 @@ import { RuleHasLabel } from '../../../types/label.type';
                 }
             </select>
 
+            <button type="button" class="px-2 py-1 text-sm text-slate-600 hover:text-slate-900" (click)="wrap.emit()">
+                Wrap
+            </button>
+
             <button type="button" class="px-2 py-1 text-sm text-red-600 hover:text-red-700" (click)="remove.emit()">
                 Remove
             </button>
@@ -32,6 +36,7 @@ export class RuleHasLabelComponent {
     readonly availableLabels = inject(LabelService).labels;
     @Output() nodeChange = new EventEmitter<RuleHasLabel>();
     @Output() remove = new EventEmitter<void>();
+    @Output() wrap = new EventEmitter<void>();
 
     onLabelChange(event: Event) {
         const labelId = (event.target as HTMLSelectElement).value;

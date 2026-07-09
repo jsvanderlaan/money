@@ -1,4 +1,5 @@
 export interface Transaction extends TransactionExtra {
+    id?: string;
     currency: string;
     date: Date;
     balanceStart: number;

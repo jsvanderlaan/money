@@ -14,10 +14,20 @@ import { RuleHasLabelComponent } from './rule-has-label.component';
         @if (thisNode) {
             @switch (thisNode.kind) {
                 @case ('condition') {
-                    <app-rule-condition [node]="thisNode" (nodeChange)="onChange($event)" (remove)="onRemove(thisNode)" />
+                    <app-rule-condition
+                        [node]="thisNode"
+                        (nodeChange)="onChange($event)"
+                        (wrap)="wrap.emit()"
+                        (remove)="onRemove(thisNode)"
+                    />
                 }
                 @case ('hasLabel') {
-                    <app-rule-has-label [node]="thisNode" (nodeChange)="onChange($event)" (remove)="onRemove(thisNode)" />
+                    <app-rule-has-label
+                        [node]="thisNode"
+                        (nodeChange)="onChange($event)"
+                        (wrap)="wrap.emit()"
+                        (remove)="onRemove(thisNode)"
+                    />
                 }
                 @case ('group') {
                     <app-rule-group [node]="thisNode" (nodeChange)="onChange($event)" (remove)="onRemove(thisNode)" />
@@ -31,6 +41,7 @@ export class RuleComponent {
 
     @Output() nodeChange = new EventEmitter<RuleNode>();
     @Output() remove = new EventEmitter<void>();
+    @Output() wrap = new EventEmitter<void>();
 
     onRemove(node: RuleNode) {
         this.remove.emit();

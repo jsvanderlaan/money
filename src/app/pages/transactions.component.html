@@ -1,45 +1,134 @@
-<div class="p-6">
-    <h2 class="text-xl font-semibold text-gray-800">Transactions</h2>
-
-    <form
-        class="mt-4 space-y-4 border p-4 rounded bg-gray-50 hover:bg-gray-100 hover:shadow hover:cursor-pointer"
-        (submit)="processFiles(); $event.preventDefault()"
-    >
-        <div>
-            <label class="block text-sm font-medium text-gray-700 hover:cursor-pointer">Upload .TAB files</label>
-            <input
-                type="file"
-                accept=".tab"
-                multiple
-                (change)="onFilesSelected($event)"
-                class="mt-2 block w-full text-sm text-gray-700 hover:cursor-pointer"
-            />
-            <p class="text-xs text-gray-500 mt-1 hover:cursor-pointer">
-                Select one or more .TAB files. Non-.TAB files will be ignored.
+<div class="space-y-6">
+    <section class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div class="space-y-2">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Import</p>
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-950">Transactions</h1>
+            <p class="max-w-2xl text-sm leading-6 text-slate-600">
+                Import one or more .TAB files, confirm the covered period, and keep full control of your local data.
             </p>
         </div>
 
-        @if (files.length) {
-        <div class="text-sm text-gray-700">
-            <strong>Selected files:</strong>
-            <ul class="list-disc ml-5 mt-2">
-                @for (f of files; track f.name) {
-                <li>{{ f.name }}</li>
+        @if (hasTransactions()) {
+            <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Dataset snapshot</p>
+                <p class="mt-1 font-medium">{{ coverage().total }} transaction(s) in local storage</p>
+                @if (minDate() && maxDate()) {
+                    <p class="mt-1 text-xs text-emerald-800">
+                        Period: {{ minDate() | date: 'yyyy-MM-dd' }} to {{ maxDate() | date: 'yyyy-MM-dd' }}
+                    </p>
                 }
-            </ul>
-        </div>
+            </div>
+        } @else {
+            <div
+                class="rounded-2xl border border-slate-200/80 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur"
+            >
+                No transactions imported yet. Start with a bank export in .TAB format.
+            </div>
         }
-    </form>
+    </section>
 
-    <div class="pt-4">
-        <button
-            type="button"
-            (click)="processFiles()"
-            [disabled]="!files.length"
-            class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-            Process
-        </button>
-        <span class="ml-3 text-sm text-gray-600">{{ statusMessage }}</span>
-    </div>
+    <section class="grid gap-4 lg:grid-cols-3">
+        <article class="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-700">Expected file format</h2>
+            <ul class="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                <li>Use files with a .TAB extension (tab-separated)</li>
+                <li>Include one transaction per row from your bank export</li>
+                <li>Use dates like YYYYMMDD and Dutch-style numbers such as 1.234,56</li>
+                <li>Files without a .TAB extension are ignored automatically</li>
+            </ul>
+        </article>
+
+        <article class="rounded-2xl border border-sky-200/80 bg-sky-50/70 p-4 shadow-sm">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.22em] text-sky-900">ABN AMRO download example</h2>
+            <ol class="mt-3 space-y-2 text-sm leading-6 text-sky-900">
+                <li>1. Open ABN AMRO Internet Bankieren</li>
+                <li>2. Go to Zelf Regelen</li>
+                <li>3. Open Download overzichten</li>
+                <li>4. Choose Bij- en afschrijvingen</li>
+                <li>5. Export as Tekstbestand (.TAB)</li>
+            </ol>
+            <p class="mt-3 text-xs text-sky-800">After downloading, return here and upload the file.</p>
+        </article>
+
+        <article class="rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-4 shadow-sm">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-800">Privacy and safety</h2>
+            <p class="mt-3 text-sm leading-6 text-emerald-900">
+                Files are processed in your browser. Imported transactions stay in local browser storage, and transaction payloads
+                are not sent to application servers.
+            </p>
+        </article>
+    </section>
+
+    <form
+        class="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm"
+        (submit)="processFiles(); $event.preventDefault()"
+    >
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+            <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <label class="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Upload .TAB files</label>
+                <input
+                    type="file"
+                    accept=".tab"
+                    multiple
+                    (change)="onFilesSelected($event)"
+                    class="mt-3 block w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:border-slate-300"
+                />
+                <p class="mt-2 text-sm text-slate-500">Select one or more .TAB files. Non-.TAB files will be ignored.</p>
+
+                @if (files.length) {
+                    <div class="mt-4 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                        <div class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Selected files</div>
+                        <ul class="mt-2 space-y-1">
+                            @for (f of files; track f.name) {
+                                <li class="rounded-lg bg-slate-50 px-3 py-2">{{ f.name }}</li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </section>
+
+            <aside class="rounded-2xl border border-slate-200 bg-slate-950 p-4 text-slate-100">
+                <label
+                    class="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-sm text-slate-200"
+                >
+                    <input
+                        type="checkbox"
+                        [(ngModel)]="includeDuplicates"
+                        (change)="onIncludeDuplicatesChange()"
+                        name="includeDuplicates"
+                        class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-950 text-sky-400"
+                    />
+                    <span>
+                        <span class="block font-medium text-white">Keep duplicate transactions on import</span>
+                        <span class="mt-1 block text-xs leading-5 text-slate-400"
+                            >Enable this only if you intentionally want duplicate rows preserved.</span
+                        >
+                    </span>
+                </label>
+
+                <div class="mt-4 rounded-xl border border-slate-800 bg-slate-900 px-3 py-3 text-xs leading-5 text-slate-300">
+                    Status updates appear below the main action so you can follow each import step clearly.
+                </div>
+
+                <a
+                    routerLink="/labels"
+                    class="mt-4 inline-flex items-center justify-center rounded-full border border-slate-700 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-200 transition hover:border-slate-500 hover:text-white"
+                >
+                    Next step: create labels
+                </a>
+            </aside>
+        </div>
+
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+                type="button"
+                (click)="processFiles()"
+                [disabled]="!files.length"
+                class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                Process selected files
+            </button>
+            <span class="text-sm text-slate-600">{{ statusMessage }}</span>
+        </div>
+    </form>
 </div>

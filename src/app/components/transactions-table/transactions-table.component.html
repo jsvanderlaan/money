@@ -1,24 +1,68 @@
-@let transactions = transactionService.transactions();
-<div class="flex items-center justify-between mb-3">
-    <h3 class="text-lg font-medium text-gray-800">
-        Transactions
-        @if (transactions.length > 0) {
-            <span class="text-gray-500">({{ transactions.length }})</span>
+@let transactions = pagedTransactions();
+<section class="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">Transactions</p>
+            <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">
+                Review queue
+                @if (totalTransactions() > 0) {
+                    <span class="text-slate-500">({{ totalTransactions() }} total, {{ transactions.length }} on page)</span>
+                }
+            </h3>
+            @if (transactionService.minDate() && transactionService.maxDate()) {
+                <div class="mt-1 text-sm text-slate-600">
+                    Available: {{ transactionService.minDate() | date: 'yyyy-MM-dd' }} to
+                    {{ transactionService.maxDate() | date: 'yyyy-MM-dd' }}
+                </div>
+            }
+        </div>
+
+        @if (totalTransactions() > 0) {
+            <div class="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-2"
+                    >Showing {{ pageStart() }}-{{ pageEnd() }}</span
+                >
+                <div class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1">
+                    <button
+                        type="button"
+                        class="rounded-full px-3 py-1.5 font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        (click)="prevPage()"
+                        [disabled]="currentPage() === 1"
+                    >
+                        Prev
+                    </button>
+                    <span class="px-2 text-xs text-slate-500">Page {{ currentPage() }} / {{ pageCount() }}</span>
+                    <button
+                        type="button"
+                        class="rounded-full px-3 py-1.5 font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        (click)="nextPage()"
+                        [disabled]="currentPage() === pageCount()"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
         }
-    </h3>
-    <div class="text-sm text-gray-500">
-        Available: {{ transactionService.minDate() | date: 'yyyy-MM-dd' }} to
-        {{ transactionService.maxDate() | date: 'yyyy-MM-dd' }}
     </div>
-</div>
-@if (transactions.length) {
-    <div class="bg-white shadow rounded divide-y">
-        @for (t of transactions; track t) {
-            <app-transaction-row [transaction]="t"></app-transaction-row>
+
+    @if (totalTransactions() > 0) {
+        @if (transactions.length) {
+            <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/80">
+                @for (t of transactions; track t.id) {
+                    <app-transaction-row [transaction]="t" [density]="density()"></app-transaction-row>
+                }
+            </div>
         }
-    </div>
-} @else {
-    <div class="text-sm text-gray-600">
-        No transactions found in storage. Upload .TAB files on the Transactions page to populate.
-    </div>
-}
+    } @else {
+        <div class="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-600">
+            <p class="font-medium text-slate-800">No transactions available yet.</p>
+            <p class="mt-1">Upload one or more .TAB exports to begin review and labeling.</p>
+            <a
+                routerLink="/transactions"
+                class="mt-3 inline-flex items-center justify-center rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-sky-500"
+            >
+                Open upload
+            </a>
+        </div>
+    }
+</section>

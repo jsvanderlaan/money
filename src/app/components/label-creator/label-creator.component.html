@@ -1,5 +1,5 @@
-<div class="bg-white shadow rounded p-4 mb-4">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+<div class="space-y-4 rounded-2xl border border-slate-200/80 bg-white/95 p-4 shadow-sm">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-3 md:items-start">
         <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700">Name</label>
             <input
@@ -20,15 +20,117 @@
         </div>
     </div>
 
-    <div class="mt-4">
-        <h3 class="text-sm font-medium">Rules</h3>
-        <p class="text-xs text-gray-500">
-            Build a boolean expression that determines when the label applies. You can nest groups and add unlimited rules.
-        </p>
+    <div class="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-900">Rules</h3>
+                <p class="text-xs text-slate-500">
+                    Build a boolean expression that determines when the label applies. You can nest groups and add unlimited
+                    rules.
+                </p>
+            </div>
 
-        <div class="mt-3">
+            <div class="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                @if (rootRule(); as root) {
+                    @if (root.kind !== 'group') {
+                        <button
+                            type="button"
+                            class="rounded-full border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
+                            (click)="wrapRootInGroup('and')"
+                        >
+                            Wrap root in group
+                        </button>
+                    }
+                    @if (root.kind === 'group' && root.children.length === 1) {
+                        <button
+                            type="button"
+                            class="rounded-full border border-slate-200 bg-white px-3 py-1.5 transition hover:border-slate-300 hover:bg-slate-50"
+                            (click)="unwrapRootGroup()"
+                        >
+                            Unwrap root group
+                        </button>
+                    }
+                }
+
+                <button
+                    type="button"
+                    class="rounded-full bg-sky-600 px-3 py-1.5 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    (click)="refreshImpactPreview()"
+                    [disabled]="!canRefreshImpact()"
+                >
+                    {{ impactPreview() ? 'Recalculate impact' : 'Calculate impact' }}
+                </button>
+            </div>
+        </div>
+
+        @if (ruleWarnings(); as warnings) {
+            <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-950">
+                <p class="font-semibold">Rule warnings</p>
+
+                @if (warnings.hasLabelDependency) {
+                    <p class="mt-1">This rule depends on other labels. Label order affects matching.</p>
+                }
+
+                <p class="mt-1">Use the impact button to recalculate matching transactions and overlap details on demand.</p>
+            </div>
+        }
+
+        @if (impactPreview(); as impact) {
+            <div class="mt-4 rounded-xl border border-sky-200 bg-sky-50/90 p-4 text-xs text-sky-950">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-semibold">Rule impact preview</p>
+                    @if (impactPreviewStale()) {
+                        <span class="rounded-full bg-amber-100 px-2 py-1 font-medium text-amber-900">Preview outdated</span>
+                    } @else {
+                        <span class="rounded-full bg-emerald-100 px-2 py-1 font-medium text-emerald-900">Up to date</span>
+                    }
+                </div>
+
+                <div class="mt-2 flex flex-wrap gap-3">
+                    <span
+                        >Current impact: <strong>{{ impact.current.count }}</strong></span
+                    >
+                    <span
+                        >Draft impact: <strong>{{ impact.draft.count }}</strong></span
+                    >
+                    <span>
+                        Delta:
+                        <strong>{{ impact.delta >= 0 ? '+' : '' }}{{ impact.delta }}</strong>
+                    </span>
+                    <span
+                        >Affected transactions: <strong>{{ impact.affectedCount }}</strong></span
+                    >
+                </div>
+
+                @if (impact.overlaps.length) {
+                    <div class="mt-3">
+                        <p class="font-semibold text-sky-900">Potential overlap</p>
+                        <ul class="mt-1 space-y-1 text-sky-900">
+                            @for (item of impact.overlaps; track item.label.id) {
+                                <li>{{ item.label.name }} ({{ item.count }})</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                @if (impact.draft.sample.length) {
+                    <p class="mt-3 font-semibold text-sky-900">Sample impacted transactions</p>
+                    <ul class="mt-1 space-y-1 text-sky-900">
+                        @for (tx of impact.draft.sample; track tx) {
+                            <li>{{ tx.date | date: 'yyyy-MM-dd' }} | {{ tx.amount | number: '1.2-2' }} | {{ tx.description }}</li>
+                        }
+                    </ul>
+                }
+            </div>
+        } @else {
+            <div class="mt-4 rounded-xl border border-dashed border-sky-200 bg-sky-50/40 p-4 text-xs text-sky-900">
+                No impact preview yet. Press calculate to inspect matching transactions and overlap.
+            </div>
+        }
+
+        <div class="mt-4">
             @if (rootRule(); as root) {
-                <app-rule [node]="root" (nodeChange)="rootRule.set($event)" (remove)="rootRule.set(null)" />
+                <app-rule [node]="root" (nodeChange)="onRootChange($event)" (remove)="onRootRemove()" />
             } @else {
                 <app-add-rule-buttons (add)="onRootAdd($event)" [showRemove]="false"></app-add-rule-buttons>
             }
@@ -40,5 +142,120 @@
                 <button type="button" class="px-4 py-2 bg-gray-100 rounded" (click)="cancelCreate()">Cancel</button>
             </div>
         </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+        <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+                <h3 class="text-sm font-semibold uppercase tracking-[0.22em] text-slate-900">Transaction explorer</h3>
+                <p class="text-xs text-slate-500">
+                    Search unlabeled and labeled transactions while shaping the rule, so you can compare candidates without
+                    leaving the editor.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+                <button
+                    type="button"
+                    class="rounded-full px-3 py-1.5 transition"
+                    [class.bg-sky-600]="transactionScope() === 'unlabeled'"
+                    [class.text-white]="transactionScope() === 'unlabeled'"
+                    [class.bg-slate-100]="transactionScope() !== 'unlabeled'"
+                    [class.text-slate-700]="transactionScope() !== 'unlabeled'"
+                    (click)="setTransactionScope('unlabeled')"
+                >
+                    Unlabeled
+                </button>
+                <button
+                    type="button"
+                    class="rounded-full px-3 py-1.5 transition"
+                    [class.bg-sky-600]="transactionScope() === 'labeled'"
+                    [class.text-white]="transactionScope() === 'labeled'"
+                    [class.bg-slate-100]="transactionScope() !== 'labeled'"
+                    [class.text-slate-700]="transactionScope() !== 'labeled'"
+                    (click)="setTransactionScope('labeled')"
+                >
+                    Labeled
+                </button>
+                <button
+                    type="button"
+                    class="rounded-full px-3 py-1.5 transition"
+                    [class.bg-sky-600]="transactionScope() === 'all'"
+                    [class.text-white]="transactionScope() === 'all'"
+                    [class.bg-slate-100]="transactionScope() !== 'all'"
+                    [class.text-slate-700]="transactionScope() !== 'all'"
+                    (click)="setTransactionScope('all')"
+                >
+                    All
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <input
+                type="text"
+                [ngModel]="transactionSearch()"
+                (ngModelChange)="transactionSearch.set($event)"
+                placeholder="Search transactions"
+                class="w-full min-w-0 flex-1 rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-700 placeholder-slate-400 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20"
+            />
+            @if (transactionSearch()) {
+                <button
+                    type="button"
+                    class="text-xs font-medium text-slate-500 transition hover:text-slate-900"
+                    (click)="clearTransactionSearch()"
+                >
+                    Clear
+                </button>
+            }
+            <span class="text-xs text-slate-500">{{ transactionExplorerResults().length }} result(s)</span>
+        </div>
+
+        @if (transactionExplorerResults().length) {
+            <div class="mt-4 max-h-72 overflow-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left text-xs">
+                    <thead class="sticky top-0 bg-slate-50 text-slate-500">
+                        <tr>
+                            <th class="px-3 py-2">Date</th>
+                            <th class="px-3 py-2">Amount</th>
+                            <th class="px-3 py-2">Description</th>
+                            <th class="px-3 py-2">Labels</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (tx of transactionExplorerResults(); track tx.id) {
+                            <tr class="border-t border-slate-100 align-top">
+                                <td class="px-3 py-2 text-slate-600">{{ tx.date | date: 'yyyy-MM-dd' }}</td>
+                                <td class="px-3 py-2 text-slate-700">{{ tx.amount | number: '1.2-2' }}</td>
+                                <td class="px-3 py-2 text-slate-900">
+                                    <div class="font-medium">{{ tx.description }}</div>
+                                    <div class="text-[11px] text-slate-500">
+                                        {{ tx.merchant || tx.naam || tx.type || 'No secondary details' }}
+                                    </div>
+                                </td>
+                                <td class="px-3 py-2 text-slate-700">
+                                    @if (tx.labels.length) {
+                                        <div class="flex flex-wrap gap-1">
+                                            @for (label of tx.labels; track label.id) {
+                                                <span
+                                                    class="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+                                                    [style.background]="label.color"
+                                                >
+                                                    {{ label.name }}
+                                                </span>
+                                            }
+                                        </div>
+                                    } @else {
+                                        <span class="text-slate-400">Unlabeled</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        } @else {
+            <p class="mt-4 text-xs text-slate-500">No transactions match the current search and scope.</p>
+        }
     </div>
 </div>

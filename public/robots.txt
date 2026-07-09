@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://money.jurre.dev/sitemap.xml

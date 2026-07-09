@@ -3,6 +3,8 @@ import { StorageService } from './storage.service';
 
 type SortField = 'date' | 'amount';
 type SortDirection = 'asc' | 'desc';
+export type ChartMode = 'bar' | 'line' | 'stacked' | 'cumulative';
+export type RowDensity = 'comfortable' | 'compact';
 
 interface SortState {
     field: SortField;
@@ -16,8 +18,11 @@ interface PersistedFilter {
     dateFrom?: string | null;
     dateTo?: string | null;
     labels: string[];
+    unlabeledOnly: boolean;
     sort: SortState;
     granularity: Granularity;
+    chartMode: ChartMode;
+    rowDensity: RowDensity;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +34,10 @@ export class FilterService {
     readonly dateFrom = signal<Date | null>(null);
     readonly dateTo = signal<Date | null>(null);
     readonly selectedLabelIds = signal<string[]>([]);
+    readonly unlabeledOnly = signal<boolean>(false);
     readonly granularity = signal<Granularity>('month');
+    readonly chartMode = signal<ChartMode>('bar');
+    readonly rowDensity = signal<RowDensity>('comfortable');
     readonly sort = signal<SortState>({ field: 'date', direction: 'desc' });
 
     // computed for convenience
@@ -48,8 +56,11 @@ export class FilterService {
             this.dateFrom.set(v.dateFrom ? new Date(v.dateFrom) : null);
             this.dateTo.set(v.dateTo ? new Date(v.dateTo) : null);
             this.selectedLabelIds.set(v.labels || []);
+            this.unlabeledOnly.set(!!v.unlabeledOnly);
             this.sort.set(v.sort || { field: 'date', direction: 'desc' });
             this.granularity.set(v.granularity || 'month');
+            this.chartMode.set(v.chartMode || 'bar');
+            this.rowDensity.set(v.rowDensity || 'comfortable');
         } else {
             // default to last month period
             const today = new Date();
@@ -66,8 +77,11 @@ export class FilterService {
                 dateFrom: this.dateFrom()?.toISOString() ?? null,
                 dateTo: this.dateTo()?.toISOString() ?? null,
                 labels: this.selectedLabelIds(),
+                unlabeledOnly: this.unlabeledOnly(),
                 sort: this.sort(),
                 granularity: this.granularity(),
+                chartMode: this.chartMode(),
+                rowDensity: this.rowDensity(),
             };
             this.storage.setObject(this.storageKey, payload);
         });
@@ -86,6 +100,10 @@ export class FilterService {
         this.selectedLabelIds.set(ids || []);
     }
 
+    setUnlabeledOnly(v: boolean) {
+        this.unlabeledOnly.set(!!v);
+    }
+
     setSort(field: SortField) {
         const current = this.sort();
         if (current.field === field) {
@@ -97,5 +115,13 @@ export class FilterService {
 
     setGranularity(v: Granularity) {
         this.granularity.set(v);
+    }
+
+    setChartMode(v: ChartMode) {
+        this.chartMode.set(v);
+    }
+
+    setRowDensity(v: RowDensity) {
+        this.rowDensity.set(v);
     }
 }

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { FilterService, Granularity } from '../../../services/filter.service';
+import { ChartMode, FilterService, Granularity, RowDensity } from '../../../services/filter.service';
 import { LabelService } from '../../../services/label.service';
 
 @Component({
@@ -13,7 +13,14 @@ import { LabelService } from '../../../services/label.service';
 export class TransactionsFilterComponent {
     private readonly filter = inject(FilterService);
     private readonly labelService = inject(LabelService);
+    readonly labelSearch = signal('');
     readonly labels = computed(() => [...(this.labelService.labels() || [])].sort((a, b) => a.name.localeCompare(b.name)));
+    readonly filteredLabels = computed(() => {
+        const query = this.labelSearch().trim().toLowerCase();
+        const labels = this.labels();
+        if (!query) return labels;
+        return labels.filter(label => label.name.toLowerCase().includes(query));
+    });
 
     get description() {
         return this.filter.description();
@@ -53,6 +60,8 @@ export class TransactionsFilterComponent {
         this.filter.setDescription('');
         this.filter.setDateRange(null, null);
         this.filter.setSelectedLabels([]);
+        this.filter.setUnlabeledOnly(false);
+        this.labelSearch.set('');
     }
 
     get granularity() {
@@ -60,6 +69,20 @@ export class TransactionsFilterComponent {
     }
     set granularity(v: Granularity) {
         this.filter.setGranularity(v);
+    }
+
+    get chartMode() {
+        return this.filter.chartMode();
+    }
+    set chartMode(v: ChartMode) {
+        this.filter.setChartMode(v);
+    }
+
+    get rowDensity() {
+        return this.filter.rowDensity();
+    }
+    set rowDensity(v: RowDensity) {
+        this.filter.setRowDensity(v);
     }
 
     // Sorting helpers (delegate to FilterService)

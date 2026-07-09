@@ -37,11 +37,32 @@ export interface LabelOption {
             <div class="space-y-2">
                 @for (child of node().children; track child.id) {
                     <div [class.pl-3]="child.kind === 'group'" class="border border-gray-100 rounded bg-white p-2">
+                        <div class="mb-2 flex items-center justify-end gap-2 text-xs text-gray-500">
+                            @if (child.kind !== 'group') {
+                                <button
+                                    type="button"
+                                    class="rounded border border-gray-200 bg-white px-2 py-1"
+                                    (click)="wrapChild(child)"
+                                >
+                                    Wrap
+                                </button>
+                            }
+                            @if (child.kind === 'group' && child.children.length === 1) {
+                                <button
+                                    type="button"
+                                    class="rounded border border-gray-200 bg-white px-2 py-1"
+                                    (click)="unwrapChild(child)"
+                                >
+                                    Unwrap
+                                </button>
+                            }
+                        </div>
                         @switch (child.kind) {
                             @case ('condition') {
                                 <app-rule-condition
                                     [node]="child"
                                     (nodeChange)="onChildChange(child, $event)"
+                                    (wrap)="wrapChild(child)"
                                     (remove)="removeChild(child)"
                                 />
                             }
@@ -49,6 +70,7 @@ export interface LabelOption {
                                 <app-rule-has-label
                                     [node]="child"
                                     (nodeChange)="onChildChange(child, $event)"
+                                    (wrap)="wrapChild(child)"
                                     (remove)="removeChild(child)"
                                 />
                             }
@@ -86,6 +108,33 @@ export class RuleGroupComponent {
         });
     }
 
+    wrapChild(child: RuleNode) {
+        if (child.kind === 'group') return;
+        const node = this.node();
+        this.nodeChange.emit({
+            ...node,
+            children: node.children.map(c =>
+                c.id === child.id
+                    ? {
+                          id: this.genId('grp'),
+                          kind: 'group',
+                          operator: 'and',
+                          children: [c],
+                      }
+                    : c
+            ),
+        });
+    }
+
+    unwrapChild(child: RuleNode) {
+        if (child.kind !== 'group' || child.children.length !== 1) return;
+        const node = this.node();
+        this.nodeChange.emit({
+            ...node,
+            children: node.children.flatMap(c => (c.id === child.id ? [child.children[0]] : [c])),
+        });
+    }
+
     removeChild(child: RuleNode) {
         const node = this.node();
         this.nodeChange.emit({
@@ -100,5 +149,9 @@ export class RuleGroupComponent {
             ...node,
             children: node.children.map(c => (c.id === oldChild.id ? newChild : c)),
         });
+    }
+
+    private genId(prefix = 'id') {
+        return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     }
 }

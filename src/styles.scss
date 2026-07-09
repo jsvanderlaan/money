@@ -1,2 +1,36 @@
 /* You can add global styles to this file, and also import other style files */
 @forward "tailwindcss";
+
+:root {
+	color-scheme: light;
+	--app-bg: #0f172a;
+	--panel-bg: rgba(255, 255, 255, 0.88);
+	--panel-border: rgba(148, 163, 184, 0.28);
+}
+
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+	background:
+		radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), transparent 34%),
+		radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 28%),
+		linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+	color: #0f172a;
+}
+
+::selection {
+	background: rgba(56, 189, 248, 0.25);
+	color: #0f172a;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+}

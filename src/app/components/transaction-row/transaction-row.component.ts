@@ -1,15 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { Transaction, TransactionType } from '../../../types/transaction.type';
+
+type RowDensity = 'comfortable' | 'compact';
 
 @Component({
     selector: 'app-transaction-row',
     standalone: true,
     imports: [CommonModule],
     templateUrl: './transaction-row.component.html',
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionRowComponent {
     @Input() transaction!: Transaction;
+    @Input() density: RowDensity = 'comfortable';
     TransactionType = TransactionType; // expose enum to template
 
     formatDate(d?: Date) {

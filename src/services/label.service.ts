@@ -15,8 +15,38 @@ export class LabelService {
     }
 
     set(labels: Label[]) {
-        this.storage.setObject(this.storageKey, { labels });
-        this.labels.set(labels);
+        const next = [...labels];
+        this.storage.setObject(this.storageKey, { labels: next });
+        this.labels.set(next);
+    }
+
+    getMatchingTransactions(label: Label, transactions: Transaction[], currentLabels: Label[]): Transaction[] {
+        const clonedTransactions = transactions.map(t => ({
+            ...t,
+            labels: [] as { id: string; name: string; color: string }[],
+        }));
+
+        const existingIndex = currentLabels.findIndex(current => current.id === label.id);
+        const labelsToApply =
+            existingIndex >= 0
+                ? currentLabels.map(current => (current.id === label.id ? label : current))
+                : [...currentLabels, label];
+
+        this.applyLabels(clonedTransactions, labelsToApply);
+        return clonedTransactions.filter(t => (t.labels || []).some(applied => applied.id === label.id));
+    }
+
+    previewLabelImpact(
+        draftLabel: Label,
+        transactions: Transaction[],
+        currentLabels: Label[]
+    ): { count: number; sample: Transaction[] } {
+        const matches = this.getMatchingTransactions(draftLabel, transactions, currentLabels);
+
+        return {
+            count: matches.length,
+            sample: matches.slice(0, 5),
+        };
     }
 
     private loadInitialData(): void {
@@ -68,13 +98,39 @@ export class LabelService {
         const field = cond.field;
         const op = cond.operator;
         const rawVal = (cond.value ?? '').toString();
+        const rawValTo = (cond.valueTo ?? '').toString();
 
-        let target: string | number | undefined = undefined;
+        let target: string | number | Date | undefined = undefined;
         if (field === 'description') target = tx.description || '';
         if (field === 'merchant') target = tx.merchant || '';
         if (field === 'naam') target = tx.naam || '';
         if (field === 'type') target = (tx.type as any) || '';
+        if (field === 'countryCode') target = tx.countryCode || '';
+        if (field === 'date') target = tx.date;
         if (field === 'amount') target = tx.amount;
+
+        if (field === 'date') {
+            const from = rawVal ? new Date(rawVal) : null;
+            const to = rawValTo ? new Date(rawValTo) : null;
+            if (op === 'between') {
+                if (!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) return false;
+                const txTime = tx.date.getTime();
+                const start = new Date(from);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(to);
+                end.setHours(23, 59, 59, 999);
+                return txTime >= start.getTime() && txTime <= end.getTime();
+            }
+            if (!from || isNaN(from.getTime())) return false;
+            const txDate = new Date(tx.date);
+            txDate.setHours(0, 0, 0, 0);
+            const compareDate = new Date(from);
+            compareDate.setHours(0, 0, 0, 0);
+            if (op === 'is') return txDate.getTime() === compareDate.getTime();
+            if (op === 'gt') return txDate.getTime() > compareDate.getTime();
+            if (op === 'lt') return txDate.getTime() < compareDate.getTime();
+            return false;
+        }
 
         if (field === 'amount') {
             const num = parseFloat(rawVal);
@@ -85,10 +141,43 @@ export class LabelService {
             return false;
         }
 
-        const sval = (target ?? '').toString().toLowerCase();
-        const q = rawVal.toLowerCase();
-        if (op === 'includes') return sval.includes(q);
+        if (field === 'countryCode') {
+            const sval = this.normalizeText((target ?? '').toString());
+            const q = this.normalizeText(rawVal);
+            if (!q) return false;
+            if (op === 'is') return sval === q;
+            if (op === 'includes') return sval.includes(q);
+            return false;
+        }
+
+        const sval = this.normalizeText((target ?? '').toString());
+        const q = this.normalizeText(rawVal);
+        if (op === 'includes') {
+            if (!q) return false;
+            // Phrase-based includes: the complete input must appear in order.
+            return sval.includes(q);
+        }
+        if (op === 'startsWith') {
+            if (!q) return false;
+            return sval.startsWith(q);
+        }
+        if (op === 'endsWith') {
+            if (!q) return false;
+            return sval.endsWith(q);
+        }
+        if (op === 'regex') {
+            if (!rawVal.trim()) return false;
+            try {
+                return new RegExp(rawVal, 'i').test((target ?? '').toString());
+            } catch {
+                return false;
+            }
+        }
         if (op === 'is') return sval === q;
         return false;
+    }
+
+    private normalizeText(value: string): string {
+        return value.toLowerCase().replace(/\s+/g, ' ').trim();
     }
 }

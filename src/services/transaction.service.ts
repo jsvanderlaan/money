@@ -4,6 +4,24 @@ import { FilterService } from './filter.service';
 import { LabelService } from './label.service';
 import { StorageService } from './storage.service';
 
+export interface CoverageStats {
+    total: number;
+    labeled: number;
+    unlabeled: number;
+    unlabeledPercentage: number;
+}
+
+export interface TransactionIngestOptions {
+    includeDuplicates?: boolean;
+}
+
+export interface TransactionIngestResult {
+    total: number;
+    stored: number;
+    skippedDuplicates: number;
+    includeDuplicates: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TransactionService {
     private readonly storageKey = 'uploaded_tabs_transactions';
@@ -12,28 +30,54 @@ export class TransactionService {
     private readonly labelService = inject(LabelService);
     private readonly transactionsCache: WritableSignal<Transaction[] | null> = signal<Transaction[] | null>(null);
 
+    readonly sourceTransactions = computed(() => {
+        const transactions = this.transactionsCache() ?? [];
+        return transactions.map(t => ({
+            ...t,
+            labels: [] as { id: string; name: string; color: string }[],
+        }));
+    });
+
     readonly minDate = computed(() => {
         const transactions = this.transactionsCache() ?? [];
+        if (!transactions.length) return null;
         return transactions.reduce((min, t) => (t.date < min ? t.date : min), transactions[0].date);
     });
     readonly maxDate = computed(() => {
         const transactions = this.transactionsCache() ?? [];
+        if (!transactions.length) return null;
         return transactions.reduce((max, t) => (t.date > max ? t.date : max), transactions[0].date);
     });
 
+    readonly allLabeledTransactions = computed(() => {
+        const transactions = this.sourceTransactions();
+        if (!transactions.length) return [];
+        const labels = this.labelService.labels() || [];
+        const result = transactions.map(t => ({ ...t }));
+        this.labelService.applyLabels(result, labels);
+        return result;
+    });
+
+    readonly coverageStats = computed<CoverageStats>(() => {
+        const all = this.allLabeledTransactions();
+        const total = all.length;
+        const labeled = all.filter(t => (t.labels || []).length > 0).length;
+        const unlabeled = total - labeled;
+        const unlabeledPercentage = total > 0 ? Math.round((unlabeled / total) * 1000) / 10 : 0;
+        return { total, labeled, unlabeled, unlabeledPercentage };
+    });
+
     readonly transactions = computed(() => {
-        const transactions = this.transactionsCache();
-        if (!transactions) return [];
+        const transactions = this.allLabeledTransactions();
+        if (!transactions.length) return [];
         const filterValues = this.filterService.descriptionWords();
         const from = this.filterService.dateFrom();
         const to = this.filterService.dateTo();
         const labelIds = this.filterService.selectedLabelIds();
+        const unlabeledOnly = this.filterService.unlabeledOnly();
         const { field, direction } = this.filterService.sort();
-        const labels = this.labelService.labels() || [];
 
         let result = [...transactions];
-
-        this.labelService.applyLabels(result, labels);
 
         if (filterValues.length > 0) {
             result = result.filter(t =>
@@ -51,6 +95,10 @@ export class TransactionService {
 
         if (labelIds && labelIds.length) {
             result = result.filter(t => (t.labels || []).some(l => labelIds.includes(l.id)));
+        }
+
+        if (unlabeledOnly) {
+            result = result.filter(t => (t.labels || []).length === 0);
         }
 
         result.sort((a, b) => {
@@ -74,9 +122,20 @@ export class TransactionService {
         this.loadInitialData();
     }
 
-    set(transactions: Transaction[]): void {
-        this.storage.setObject(this.storageKey, { transactions });
-        this.transactionsCache.set(transactions);
+    set(transactions: Transaction[], options: TransactionIngestOptions = {}): TransactionIngestResult {
+        const includeDuplicates = options.includeDuplicates ?? false;
+        const filteredTransactions = includeDuplicates ? [...transactions] : this.deduplicateTransactions(transactions);
+        const normalizedTransactions = this.assignTransactionIds(filteredTransactions);
+
+        this.storage.setObject(this.storageKey, { transactions: normalizedTransactions });
+        this.transactionsCache.set(normalizedTransactions);
+
+        return {
+            total: transactions.length,
+            stored: normalizedTransactions.length,
+            skippedDuplicates: transactions.length - filteredTransactions.length,
+            includeDuplicates,
+        };
     }
 
     clear(): void {
@@ -87,10 +146,53 @@ export class TransactionService {
     private loadInitialData(): void {
         const v = this.storage.getObject<{ transactions: any[] }>(this.storageKey);
         if (!v) return;
-        const transactions: Transaction[] = v.transactions.map((t: any) => ({
-            ...t,
-            date: t.date ? new Date(t.date) : undefined,
-        }));
+        const transactions: Transaction[] = this.assignTransactionIds(
+            v.transactions.map((t: any) => ({
+                ...t,
+                date: t.date ? new Date(t.date) : undefined,
+            }))
+        );
         this.transactionsCache.set(transactions);
+    }
+
+    private deduplicateTransactions(transactions: Transaction[]): Transaction[] {
+        const seen = new Set<string>();
+        const unique: Transaction[] = [];
+
+        for (const transaction of transactions) {
+            const fingerprint = this.createFingerprint(transaction);
+            if (seen.has(fingerprint)) continue;
+
+            seen.add(fingerprint);
+            unique.push(transaction);
+        }
+
+        return unique;
+    }
+
+    private createFingerprint(transaction: Transaction): string {
+        return [
+            transaction.date instanceof Date ? transaction.date.toISOString() : String(transaction.date),
+            transaction.amount,
+            transaction.currency,
+            transaction.description?.trim().toLowerCase() || '',
+            transaction.merchant?.trim().toLowerCase() || '',
+            transaction.naam?.trim().toLowerCase() || '',
+            transaction.type || '',
+            transaction.balanceStart ?? '',
+            transaction.balanceEnd ?? '',
+            transaction.pasNumber || '',
+            transaction.nr || '',
+            transaction.iban || '',
+            transaction.bic || '',
+            transaction.kenmerk || '',
+        ].join('::');
+    }
+
+    private assignTransactionIds(transactions: Transaction[]): Transaction[] {
+        return transactions.map((transaction, index) => ({
+            ...transaction,
+            id: transaction.id || `${this.createFingerprint(transaction)}::${index}`,
+        }));
     }
 }
